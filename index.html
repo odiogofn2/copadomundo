@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bolão Copa 2026</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Bolão Copa 2026</h1>
+      <p>Palpites por jogo • R$ 0,50 por partida • Horário de Brasília</p>
+    </div>
+    <div id="userBox" class="user-box hidden"></div>
+  </header>
+
+  <main>
+    <section id="setupBox" class="card alert">
+      <h2>Configuração inicial</h2>
+      <p>Abra <b>app.js</b> e preencha <b>SUPABASE_URL</b> e <b>SUPABASE_ANON_KEY</b>.</p>
+    </section>
+
+    <section id="authView" class="card auth-grid">
+      <div>
+        <h2>Entrar</h2>
+        <label>E-mail</label>
+        <input id="loginEmail" type="email" placeholder="seu@email.com" />
+        <label>Senha</label>
+        <input id="loginPassword" type="password" placeholder="Senha" />
+        <button id="btnLogin">Entrar</button>
+      </div>
+      <div>
+        <h2>Cadastrar</h2>
+        <label>Nome</label>
+        <input id="signupName" type="text" placeholder="Nome do jogador" />
+        <label>E-mail</label>
+        <input id="signupEmail" type="email" placeholder="seu@email.com" />
+        <label>Senha</label>
+        <input id="signupPassword" type="password" placeholder="Mínimo 6 caracteres" />
+        <button id="btnSignup">Criar conta</button>
+      </div>
+      <div>
+        <h2>Recuperar senha</h2>
+        <label>E-mail</label>
+        <input id="resetEmail" type="email" placeholder="seu@email.com" />
+        <button id="btnReset">Enviar recuperação</button>
+      </div>
+    </section>
+
+    <section id="appView" class="hidden">
+      <nav class="tabs">
+        <button data-tab="matches" class="active">Jogos / Palpites</button>
+        <button data-tab="ranking">Ranking</button>
+        <button data-tab="financeiro">Meu Financeiro</button>
+        <button data-tab="apuration">Apuração Pública</button>
+        <button data-tab="gestor" id="gestorTab" class="hidden">Gestor</button>
+      </nav>
+
+      <section id="matches" class="tab-content active">
+        <div class="card row between wrap">
+          <div>
+            <h2>Jogos e palpites</h2>
+            <p>Você pode criar ou alterar o palpite até 30 minutos antes do jogo, se ele não estiver bloqueado.</p>
+          </div>
+          <div class="filters">
+            <input id="searchMatch" placeholder="Buscar time, fase, cidade..." />
+            <select id="filterDay"><option value="">Todos os dias</option></select>
+          </div>
+        </div>
+        <div id="matchesList" class="grid"></div>
+      </section>
+
+      <section id="ranking" class="tab-content">
+        <div class="card"><h2>Ranking geral</h2><div id="rankingBox"></div></div>
+      </section>
+
+      <section id="financeiro" class="tab-content">
+        <div class="card"><h2>Meu financeiro</h2><div id="financeBox"></div></div>
+      </section>
+
+      <section id="apuration" class="tab-content">
+        <div class="card"><h2>Apuração pública por jogo</h2><div id="apurationBox"></div></div>
+      </section>
+
+      <section id="gestor" class="tab-content">
+        <div class="card row between wrap">
+          <div>
+            <h2>Painel do gestor</h2>
+            <p>O gestor lança resultados e bloqueia apostas. Não há função para alterar palpite de jogador.</p>
+          </div>
+          <div class="row wrap">
+            <button id="btnBlockAll" class="danger">Bloquear todos</button>
+            <button id="btnUnblockAll">Liberar todos</button>
+          </div>
+        </div>
+        <div id="gestorList" class="grid"></div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>
