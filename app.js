@@ -1,8 +1,8 @@
 // ===============================
 // CONFIGURE AQUI O SEU SUPABASE
 // ===============================
-const SUPABASE_URL = 'https://muizwcujosmukqywgcag.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11aXp3Y3Vqb3NtdWtxeXdnY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzU1ODksImV4cCI6MjA5Njc1MTU4OX0.Gf96rSreo7PkoYx6EYABshGggleu4efhyaX32RNGyl0';
+const SUPABASE_URL = 'COLE_AQUI_SUA_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'COLE_AQUI_SUA_SUPABASE_ANON_KEY';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BET_VALUE = 0.50;
@@ -41,6 +41,7 @@ function bindEvents(){
   $('btnReset').onclick = resetPassword;
   $('searchMatch').oninput = renderMatches;
   $('filterDay').onchange = renderMatches;
+  $('searchApuration').oninput = renderApuration;
   $('btnBlockAll').onclick = () => setGlobalLock(true);
   $('btnUnblockAll').onclick = () => setGlobalLock(false);
   document.querySelectorAll('.tabs button').forEach(btn => btn.onclick = () => switchTab(btn.dataset.tab));
@@ -77,6 +78,9 @@ async function enterApp(){
   await loadAll();
   $('userBox').innerHTML = `<span>${profile?.nome || session.user.email} • <b>${profile?.role}</b></span><button class="secondary" onclick="logout()">Sair</button>`;
   $('gestorTab').classList.toggle('hidden', profile?.role !== 'gestor');
+  if (profile?.role === 'gestor') {
+    switchTab('gestor');
+  }
   renderAll();
 }
 
@@ -119,6 +123,10 @@ function filteredMatches(){
   });
 }
 function renderMatches(){
+  if (profile?.role === 'gestor') {
+    $('matchesList').innerHTML = `<div class="card"><h3>Perfil gestor</h3><p>Gestor não participa da contabilização de R$ 0,50 por jogo e não pode fazer palpites. Use a aba Gestor para bloquear jogos e informar resultados.</p></div>`;
+    return;
+  }
   $('matchesList').innerHTML = filteredMatches().map(m => {
     const g = guesses.find(x => x.match_id === m.id);
     const locked = m.bets_locked || deadlinePassed(m);
@@ -140,6 +148,7 @@ function renderMatches(){
 }
 
 async function saveGuess(matchId){
+  if (profile?.role === 'gestor') return toast('Perfil gestor não pode fazer palpites.');
   const a = Number($(`ga_${matchId}`).value), b = Number($(`gb_${matchId}`).value);
   if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0) return toast('Informe placares válidos.');
   const { error } = await sb.from('guesses').upsert({ match_id: matchId, player_id: session.user.id, guess_a: a, guess_b: b }, { onConflict: 'match_id,player_id' });
@@ -147,6 +156,7 @@ async function saveGuess(matchId){
   toast('Palpite salvo.'); await loadAll(); renderAll();
 }
 async function deleteGuess(matchId){
+  if (profile?.role === 'gestor') return toast('Perfil gestor não pode excluir palpites.');
   const { error } = await sb.from('guesses').delete().eq('match_id', matchId).eq('player_id', session.user.id);
   if (error) return toast(error.message);
   toast('Palpite excluído.'); await loadAll(); renderAll();
@@ -156,6 +166,10 @@ function renderRanking(){
   $('rankingBox').innerHTML = table(['#','Jogador','Placar exato','Resultado','Prêmios','Pagar','Saldo'], rankings.map((r,i)=>[i+1,r.nome,r.placares_exatos,r.resultados_corretos,money(r.premios),money(r.valor_a_pagar_ate_agora),money(r.saldo_ate_agora)]));
 }
 function renderFinance(){
+  if (profile?.role === 'gestor') {
+    $('financeBox').innerHTML = '<div class="card"><h3>Perfil gestor</h3><p>Gestor não entra na contabilização dos R$ 0,50 por jogo e não possui saldo financeiro no bolão.</p></div>';
+    return;
+  }
   const me = rankings.find(r => r.id === session.user.id);
   if(!me) return $('financeBox').innerHTML = 'Sem dados financeiros.';
   $('financeBox').innerHTML = `<div class="grid">
@@ -166,12 +180,40 @@ function renderFinance(){
   </div>`;
 }
 function renderApuration(){
-  const rows = apurations.map(a => [
-    `#${a.match_number}`, `${a.team_a} ${a.score_a} x ${a.score_b} ${a.team_b}`, a.nome,
+  const q = ($('searchApuration')?.value || '').toLowerCase().trim();
+
+  const filtered = apurations.filter(a => {
+    const palpite = a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`;
+    const situacao = a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou';
+    const texto = [
+      `#${a.match_number}`,
+      a.fase || '',
+      a.grupo || '',
+      a.team_a || '',
+      a.team_b || '',
+      a.nome || '',
+      `${a.score_a} x ${a.score_b}`,
+      palpite,
+      situacao,
+      money(a.prize_value)
+    ].join(' ').toLowerCase();
+    return !q || texto.includes(q);
+  });
+
+  const rows = filtered.map(a => [
+    `#${a.match_number}`,
+    `${a.team_a} ${a.score_a} x ${a.score_b} ${a.team_b}`,
+    a.nome,
     a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`,
-    a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou', money(a.prize_value)
+    a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou',
+    money(a.prize_value)
   ]);
-  $('apurationBox').innerHTML = table(['Jogo','Resultado','Jogador','Palpite','Situação','Prêmio'], rows);
+
+  const resumo = q
+    ? `<p class="muted">Mostrando ${filtered.length} de ${apurations.length} registros.</p>`
+    : `<p class="muted">Total de registros: ${apurations.length}.</p>`;
+
+  $('apurationBox').innerHTML = resumo + table(['Jogo','Resultado','Jogador','Palpite','Situação','Prêmio'], rows);
 }
 
 function renderGestor(){
