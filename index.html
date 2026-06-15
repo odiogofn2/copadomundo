@@ -54,7 +54,9 @@
         <button data-tab="matches" class="active">Jogos / Palpites</button>
         <button data-tab="ranking">Ranking</button>
         <button data-tab="financeiro">Meu Financeiro</button>
+        <button data-tab="meusPalpites">Meus Palpites</button>
         <button data-tab="apuration">Apuração Pública</button>
+        <button data-tab="adminGestores" id="adminGestoresTab" class="hidden">Administrar Gestores</button>
         <button data-tab="gestor" id="gestorTab" class="hidden">Gestor</button>
       </nav>
 
@@ -80,6 +82,26 @@
         <div class="card"><h2>Meu financeiro</h2><div id="financeBox"></div></div>
       </section>
 
+      <section id="meusPalpites" class="tab-content">
+        <div class="card row between wrap">
+          <div>
+            <h2>Meus Palpites</h2>
+            <p>Acompanhe palpites pendentes, encerrados, acertos e erros.</p>
+          </div>
+          <div class="filters">
+            <select id="filterMyGuesses">
+              <option value="todos">Todos</option>
+              <option value="pendentes">Pendentes</option>
+              <option value="encerrados">Encerrados</option>
+              <option value="acertos">Acertos</option>
+              <option value="erros">Erros</option>
+            </select>
+            <input id="searchMyGuesses" placeholder="Buscar seleção, fase..." />
+          </div>
+        </div>
+        <div class="card"><div id="myGuessesBox"></div></div>
+      </section>
+
       <section id="apuration" class="tab-content">
         <div class="card row between wrap">
           <div>
@@ -93,6 +115,19 @@
         <div class="card"><div id="apurationBox"></div></div>
       </section>
 
+      <section id="adminGestores" class="tab-content">
+        <div class="card">
+          <h2>Administrar gestores</h2>
+          <p>Para criar um gestor, primeiro cadastre o usuário normalmente na tela de cadastro. Depois informe o e-mail aqui e promova para gestor.</p>
+          <div class="row wrap">
+            <input id="managerEmail" type="email" placeholder="email@exemplo.com" style="max-width:360px" />
+            <button id="btnPromoteManager">Tornar gestor</button>
+            <button id="btnDemoteManager" class="danger">Remover gestor</button>
+          </div>
+        </div>
+        <div class="card"><h3>Usuários cadastrados</h3><div id="usersBox"></div></div>
+      </section>
+
       <section id="gestor" class="tab-content">
         <div class="card row between wrap">
           <div>
@@ -104,6 +139,10 @@
             <button id="btnUnblockAll">Liberar todos</button>
           </div>
         </div>
+        <div id="gestorDashboard" class="grid"></div>
+        <div class="card"><h3>Jogos de hoje aguardando resultado</h3><div id="todayPendingBox"></div></div>
+        <div class="card"><h3>Quem já fez todos os palpites dos jogos de hoje</h3><div id="todayGuessesStatusBox"></div></div>
+        <div class="card"><h3>Jogos já apurados</h3><div id="alreadyApuratedBox"></div></div>
         <div id="gestorList" class="grid"></div>
       </section>
     </section>
