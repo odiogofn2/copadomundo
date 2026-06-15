@@ -1,8 +1,8 @@
 // ===============================
 // CONFIGURE AQUI O SEU SUPABASE
 // ===============================
-const SUPABASE_URL = 'COLE_AQUI_SUA_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'COLE_AQUI_SUA_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://muizwcujosmukqywgcag.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11aXp3Y3Vqb3NtdWtxeXdnY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzU1ODksImV4cCI6MjA5Njc1MTU4OX0.Gf96rSreo7PkoYx6EYABshGggleu4efhyaX32RNGyl0';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BET_VALUE = 0.50;
