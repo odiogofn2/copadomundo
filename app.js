@@ -1,8 +1,8 @@
 // ===============================
 // CONFIGURE AQUI O SEU SUPABASE
 // ===============================
-const SUPABASE_URL = 'https://muizwcujosmukqywgcag.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11aXp3Y3Vqb3NtdWtxeXdnY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzU1ODksImV4cCI6MjA5Njc1MTU4OX0.Gf96rSreo7PkoYx6EYABshGggleu4efhyaX32RNGyl0';
+const SUPABASE_URL = 'COLE_AQUI_SUA_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'COLE_AQUI_SUA_SUPABASE_ANON_KEY';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BET_VALUE = 0.50;
@@ -17,6 +17,25 @@ let gestorDashboard = null;
 let todayPending = [];
 let todayStatus = [];
 let alreadyApurated = [];
+
+const TEAM_FLAG_CODES = {
+  'México':'mx','África do Sul':'za','Coreia do Sul':'kr','Tchéquia':'cz','Canadá':'ca','Bósnia e Herzegovina':'ba',
+  'Estados Unidos':'us','Paraguai':'py','Catar':'qa','Suíça':'ch','Brasil':'br','Marrocos':'ma','Haiti':'ht','Escócia':'gb-sct',
+  'Austrália':'au','Turquia':'tr','Alemanha':'de','Curaçao':'cw','Holanda':'nl','Japão':'jp','Costa do Marfim':'ci','Equador':'ec',
+  'Suécia':'se','Tunísia':'tn','Espanha':'es','Cabo Verde':'cv','Bélgica':'be','Egito':'eg','Arábia Saudita':'sa','Uruguai':'uy',
+  'Irã':'ir','Nova Zelândia':'nz','França':'fr','Senegal':'sn','Iraque':'iq','Noruega':'no','Argentina':'ar','Argélia':'dz',
+  'Áustria':'at','Jordânia':'jo','Portugal':'pt','RD Congo':'cd','Inglaterra':'gb-eng','Croácia':'hr','Gana':'gh','Panamá':'pa',
+  'Uzbequistão':'uz','Colômbia':'co','TBD':null
+};
+function flagCode(team, explicitCode){ return explicitCode || TEAM_FLAG_CODES[team] || null; }
+function flagImg(code, team){
+  if(!code) return '';
+  return `<img class="flag" src="https://flagcdn.com/w40/${code}.png" alt="Bandeira ${team || ''}" loading="lazy" onerror="this.style.display='none'">`;
+}
+function teamName(team, code){ return `<span class="team-name">${flagImg(flagCode(team, code), team)}<span>${team}</span></span>`; }
+function matchup(m){ return `${teamName(m.team_a, m.team_a_code)} <span class="versus">x</span> ${teamName(m.team_b, m.team_b_code)}`; }
+function matchupText(m){ return `${m.team_a} x ${m.team_b}`; }
+
 
 const $ = (id) => document.getElementById(id);
 const money = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -157,7 +176,7 @@ function renderMatches(){
     const locked = m.bets_locked || deadlinePassed(m);
     const status = m.result_entered ? `<span class="badge ok">Resultado: ${m.score_a} x ${m.score_b}</span>` : locked ? '<span class="badge danger">Palpite travado</span>' : '<span class="badge ok">Aberto</span>';
     return `<article class="card match-card">
-      <h3>#${m.match_number} — ${m.team_a} x ${m.team_b}</h3>
+      <h3>#${m.match_number} — ${matchup(m)}</h3>
       <p class="muted">${m.fase}${m.grupo ? ' • Grupo ' + m.grupo : ''} • ${dt(m.kickoff_brt)} BRT<br>${m.stadium || ''} ${m.city ? '• ' + m.city : ''}</p>
       ${status}
       <div class="row wrap" style="margin-top:12px">
@@ -239,7 +258,7 @@ function renderMyGuesses(){
     return okTipo && (!q || texto.includes(q));
   });
   $('myGuessesBox').innerHTML = table(['Jogo','Data','Meu palpite','Resultado','Situação','Prêmio'], rows.map(x => [
-    `#${x.m.match_number} — ${x.m.team_a} x ${x.m.team_b}`,
+    `#${x.m.match_number} — ${matchup(x.m)}`,
     dt(x.m.kickoff_brt),
     x.g ? `${x.g.guess_a} x ${x.g.guess_b}` : 'Sem palpite',
     x.m.result_entered ? `${x.m.score_a} x ${x.m.score_b}` : '-',
@@ -256,7 +275,7 @@ function renderApuration(){
     const texto = [`#${a.match_number}`, a.fase || '', a.grupo || '', a.team_a || '', a.team_b || '', a.nome || '', `${a.score_a} x ${a.score_b}`, palpite, situacao, money(a.prize_value)].join(' ').toLowerCase();
     return !q || texto.includes(q);
   });
-  const rows = filtered.map(a => [`#${a.match_number}`, `${a.team_a} ${a.score_a} x ${a.score_b} ${a.team_b}`, a.nome, a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`, a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou', money(a.prize_value)]);
+  const rows = filtered.map(a => [`#${a.match_number}`, `${teamName(a.team_a, a.team_a_code)} ${a.score_a} x ${a.score_b} ${teamName(a.team_b, a.team_b_code)}`, a.nome, a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`, a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou', money(a.prize_value)]);
   const resumo = q ? `<p class="muted">Mostrando ${filtered.length} de ${apurations.length} registros.</p>` : `<p class="muted">Total de registros: ${apurations.length}.</p>`;
   $('apurationBox').innerHTML = resumo + table(['Jogo','Resultado','Jogador','Palpite','Situação','Prêmio'], rows);
 }
@@ -265,7 +284,7 @@ function renderGestor(){
   if(profile?.role !== 'gestor') return;
   renderGestorDashboard();
   $('gestorList').innerHTML = matches.map(m => `<article class="card match-card">
-    <h3>#${m.match_number} — ${m.team_a} x ${m.team_b}</h3>
+    <h3>#${m.match_number} — ${matchup(m)}</h3>
     <p class="muted">${m.fase}${m.grupo ? ' • Grupo ' + m.grupo : ''} • ${dt(m.kickoff_brt)} BRT</p>
     <span class="badge ${m.bets_locked?'danger':'ok'}">${m.bets_locked?'Bloqueado':'Liberado'}</span>
     <div class="row wrap">
@@ -288,9 +307,9 @@ function renderGestorDashboard(){
     <div class="card stat"><h3>Arrecadação prevista</h3><h2>${money(d.total_arrecadado_campeonato_previsto)}</h2></div>
     <div class="card stat"><h3>Total distribuído</h3><h2>${money(d.total_distribuido)}</h2></div>
     <div class="card stat"><h3>Hoje sem resultado</h3><h2>${d.jogos_hoje_aguardando_resultado || 0}</h2></div>`;
-  $('todayPendingBox').innerHTML = table(['Jogo','Horário','Fase','Status'], todayPending.map(m => [`#${m.match_number} — ${m.team_a} x ${m.team_b}`, dt(m.kickoff_brt), `${m.fase}${m.grupo ? ' • Grupo ' + m.grupo : ''}`, m.bets_locked ? 'Bloqueado' : 'Liberado']));
+  $('todayPendingBox').innerHTML = table(['Jogo','Horário','Fase','Status'], todayPending.map(m => [`#${m.match_number} — ${matchup(m)}`, dt(m.kickoff_brt), `${m.fase}${m.grupo ? ' • Grupo ' + m.grupo : ''}`, m.bets_locked ? 'Bloqueado' : 'Liberado']));
   $('todayGuessesStatusBox').innerHTML = table(['Jogador','E-mail','Feitos','Faltando','Status'], todayStatus.map(x => [x.nome, x.email || '-', `${x.palpites_feitos}/${x.total_jogos_hoje}`, x.palpites_faltando, x.status]));
-  $('alreadyApuratedBox').innerHTML = table(['Jogo','Resultado','Data','Distribuído'], alreadyApurated.map(m => [`#${m.match_number} — ${m.team_a} x ${m.team_b}`, `${m.score_a} x ${m.score_b}`, dt(m.kickoff_brt), money(m.total_distribuido_jogo)]));
+  $('alreadyApuratedBox').innerHTML = table(['Jogo','Resultado','Data','Distribuído'], alreadyApurated.map(m => [`#${m.match_number} — ${matchup(m)}`, `${m.score_a} x ${m.score_b}`, dt(m.kickoff_brt), money(m.total_distribuido_jogo)]));
 }
 function renderUsers(){
   if(profile?.role !== 'gestor') return;
