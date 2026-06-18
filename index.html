@@ -56,6 +56,7 @@
         <button data-tab="financeiro">Meu Financeiro</button>
         <button data-tab="meusPalpites">Meus Palpites</button>
         <button data-tab="apuration">Apuração Pública</button>
+        <button data-tab="auditoria" id="auditoriaTab" class="hidden">Auditoria</button>
         <button data-tab="adminGestores" id="adminGestoresTab" class="hidden">Administrar Gestores</button>
         <button data-tab="gestor" id="gestorTab" class="hidden">Gestor</button>
       </nav>
@@ -113,6 +114,25 @@
           </div>
         </div>
         <div class="card"><div id="apurationBox"></div></div>
+      </section>
+
+      <section id="auditoria" class="tab-content">
+        <div class="card row between wrap">
+          <div>
+            <h2>Auditoria dos palpites</h2>
+            <p>Veja quando cada palpite foi criado, alterado ou excluído, com horário de Brasília.</p>
+          </div>
+          <div class="filters">
+            <input id="searchAudit" placeholder="Buscar jogador, jogo, ação..." />
+            <select id="filterAuditAction">
+              <option value="">Todas as ações</option>
+              <option value="INSERT">Criação</option>
+              <option value="UPDATE">Alteração</option>
+              <option value="DELETE">Exclusão</option>
+            </select>
+          </div>
+        </div>
+        <div class="card"><div id="auditBox"></div></div>
       </section>
 
       <section id="adminGestores" class="tab-content">

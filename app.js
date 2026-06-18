@@ -17,6 +17,7 @@ let gestorDashboard = null;
 let todayPending = [];
 let todayStatus = [];
 let alreadyApurated = [];
+let auditRows = [];
 
 const TEAM_FLAG_CODES = {
   'México':'mx','África do Sul':'za','Coreia do Sul':'kr','Tchéquia':'cz','Canadá':'ca','Bósnia e Herzegovina':'ba',
@@ -65,6 +66,8 @@ function bindEvents(){
   $('searchMatch').oninput = renderMatches;
   $('filterDay').onchange = renderMatches;
   $('searchApuration').oninput = renderApuration;
+  $('searchAudit').oninput = renderAudit;
+  $('filterAuditAction').onchange = renderAudit;
   $('btnBlockAll').onclick = () => setGlobalLock(true);
   $('btnUnblockAll').onclick = () => setGlobalLock(false);
   $('btnPromoteManager').onclick = () => setManagerRole('gestor');
@@ -107,6 +110,7 @@ async function enterApp(){
   const isGestor = profile?.role === 'gestor';
   $('gestorTab').classList.toggle('hidden', !isGestor);
   $('adminGestoresTab').classList.toggle('hidden', !isGestor);
+  $('auditoriaTab').classList.toggle('hidden', !isGestor);
   if (isGestor) switchTab('gestor');
   renderAll();
 }
@@ -132,18 +136,20 @@ async function loadAll(){
   apurations = aRes.data || [];
 
   if (profile?.role === 'gestor') {
-    const [uRes, dRes, tpRes, tsRes, jaRes] = await Promise.all([
+    const [uRes, dRes, tpRes, tsRes, jaRes, audRes] = await Promise.all([
       sb.from('profiles').select('id,nome,email,role,created_at').order('nome'),
       sb.from('gestor_dashboard').select('*').single(),
       sb.from('jogos_hoje_aguardando_resultado').select('*').order('kickoff_brt'),
       sb.from('palpites_do_dia_status').select('*'),
-      sb.from('jogos_ja_apurados').select('*').limit(50)
+      sb.from('jogos_ja_apurados').select('*').limit(50),
+      sb.from('guess_audit_view').select('*').order('changed_at', { ascending: false }).limit(1000)
     ]);
     allUsers = uRes.data || [];
     gestorDashboard = dRes.data || null;
     todayPending = tpRes.data || [];
     todayStatus = tsRes.data || [];
     alreadyApurated = jaRes.data || [];
+    auditRows = audRes.data || [];
   }
   fillDayFilter();
 }
@@ -153,7 +159,7 @@ function fillDayFilter(){
   sel.innerHTML = '<option value="">Todos os dias</option>' + days.map(d=>`<option value="${d}">${d}</option>`).join('');
   sel.value = current;
 }
-function renderAll(){ renderMatches(); renderRanking(); renderFinance(); renderMyGuesses(); renderApuration(); renderGestor(); renderUsers(); }
+function renderAll(){ renderMatches(); renderRanking(); renderFinance(); renderMyGuesses(); renderApuration(); renderAudit(); renderGestor(); renderUsers(); }
 function switchTab(tab){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   document.querySelectorAll('.tab-content').forEach(s=>s.classList.toggle('active', s.id===tab));
@@ -278,6 +284,42 @@ function renderApuration(){
   const rows = filtered.map(a => [`#${a.match_number}`, `${teamName(a.team_a, a.team_a_code)} ${a.score_a} x ${a.score_b} ${teamName(a.team_b, a.team_b_code)}`, a.nome, a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`, a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou', money(a.prize_value)]);
   const resumo = q ? `<p class="muted">Mostrando ${filtered.length} de ${apurations.length} registros.</p>` : `<p class="muted">Total de registros: ${apurations.length}.</p>`;
   $('apurationBox').innerHTML = resumo + table(['Jogo','Resultado','Jogador','Palpite','Situação','Prêmio'], rows);
+}
+
+
+function renderAudit(){
+  if(profile?.role !== 'gestor') return;
+  const q = ($('searchAudit')?.value || '').toLowerCase().trim();
+  const action = $('filterAuditAction')?.value || '';
+  const rows = auditRows.filter(a => {
+    const antes = a.old_guess_a == null ? '-' : `${a.old_guess_a} x ${a.old_guess_b}`;
+    const depois = a.new_guess_a == null ? '-' : `${a.new_guess_a} x ${a.new_guess_b}`;
+    const acao = auditActionLabel(a.action);
+    const texto = [
+      a.match_number, a.fase || '', a.grupo || '', a.team_a || '', a.team_b || '',
+      a.jogador || '', a.jogador_email || '', acao, antes, depois,
+      a.alterado_por_nome || '', a.alterado_por_email || '', dt(a.changed_at)
+    ].join(' ').toLowerCase();
+    return (!action || a.action === action) && (!q || texto.includes(q));
+  });
+  const resumo = `<p class="muted">Mostrando ${rows.length} de ${auditRows.length} movimentações. Horários exibidos em Brasília.</p>`;
+  $('auditBox').innerHTML = resumo + table([
+    'Data/hora', 'Ação', 'Jogo', 'Jogador', 'Antes', 'Depois', 'Alterado por'
+  ], rows.map(a => [
+    dt(a.changed_at),
+    auditActionLabel(a.action),
+    `#${a.match_number} — ${matchup(a)}`,
+    `${a.jogador || '-'}<br><span class="muted">${a.jogador_email || ''}</span>`,
+    a.old_guess_a == null ? '-' : `${a.old_guess_a} x ${a.old_guess_b}`,
+    a.new_guess_a == null ? '-' : `${a.new_guess_a} x ${a.new_guess_b}`,
+    `${a.alterado_por_nome || '-'}<br><span class="muted">${a.alterado_por_email || ''}</span>`
+  ]));
+}
+function auditActionLabel(action){
+  if(action === 'INSERT') return 'Criação';
+  if(action === 'UPDATE') return 'Alteração';
+  if(action === 'DELETE') return 'Exclusão';
+  return action || '-';
 }
 
 function renderGestor(){
