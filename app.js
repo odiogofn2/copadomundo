@@ -66,6 +66,7 @@ function bindEvents(){
   $('searchMatch').oninput = renderMatches;
   $('filterDay').onchange = renderMatches;
   $('searchApuration').oninput = renderApuration;
+  if($('orderApuration')) $('orderApuration').onchange = renderApuration;
   $('searchAudit').oninput = renderAudit;
   $('filterAuditAction').onchange = renderAudit;
   $('btnBlockAll').onclick = () => setGlobalLock(true);
@@ -273,17 +274,44 @@ function renderMyGuesses(){
   ]));
 }
 
+
 function renderApuration(){
   const q = ($('searchApuration')?.value || '').toLowerCase().trim();
-  const filtered = apurations.filter(a => {
+  const order = ($('orderApuration')?.value || 'desc');
+  let filtered = apurations.filter(a => {
     const palpite = a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`;
     const situacao = a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou';
-    const texto = [`#${a.match_number}`, a.fase || '', a.grupo || '', a.team_a || '', a.team_b || '', a.nome || '', `${a.score_a} x ${a.score_b}`, palpite, situacao, money(a.prize_value)].join(' ').toLowerCase();
+    const texto = [`#${a.match_number}`, a.fase || '', a.grupo || '', a.team_a || '', a.team_b || '', a.nome || '', palpite, situacao].join(' ').toLowerCase();
     return !q || texto.includes(q);
   });
-  const rows = filtered.map(a => [`#${a.match_number}`, `${teamName(a.team_a, a.team_a_code)} ${a.score_a} x ${a.score_b} ${teamName(a.team_b, a.team_b_code)}`, a.nome, a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`, a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou', money(a.prize_value)]);
-  const resumo = q ? `<p class="muted">Mostrando ${filtered.length} de ${apurations.length} registros.</p>` : `<p class="muted">Total de registros: ${apurations.length}.</p>`;
-  $('apurationBox').innerHTML = resumo + table(['Jogo','Resultado','Jogador','Palpite','Situação','Prêmio'], rows);
+
+  const groups = {};
+  filtered.forEach(r=>{
+    if(!groups[r.match_id]) groups[r.match_id]={game:r, rows:[]};
+    groups[r.match_id].rows.push(r);
+  });
+
+  let games = Object.values(groups);
+  games.sort((a,b)=>{
+    const da=new Date(a.game.kickoff_brt).getTime();
+    const db=new Date(b.game.kickoff_brt).getTime();
+    return order==='asc' ? da-db : db-da;
+  });
+
+  $('apurationBox').innerHTML = games.map(g=>{
+    const winners=g.rows.filter(x=>x.exact_score||x.correct_outcome).length;
+    const prize=g.rows.reduce((s,x)=>s+Number(x.prize_value||0),0);
+    return `<details class="card" open>
+      <summary><b>#${g.game.match_number}</b> — ${g.game.team_a} ${g.game.score_a} x ${g.game.score_b} ${g.game.team_b} (${dt(g.game.kickoff_brt)})</summary>
+      <p class="muted">Vencedores: ${winners} • Prêmios distribuídos: ${money(prize)}</p>
+      ${table(['Jogador','Palpite','Situação','Prêmio'], g.rows.map(a=>[
+        a.nome,
+        a.guess_a == null ? 'Sem palpite' : `${a.guess_a} x ${a.guess_b}`,
+        a.exact_score ? 'Placar exato' : a.correct_outcome ? 'Resultado' : 'Errou',
+        money(a.prize_value)
+      ]))}
+    </details>`;
+  }).join('') || '<p>Nenhum registro encontrado.</p>';
 }
 
 
